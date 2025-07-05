@@ -2,7 +2,9 @@ import yfinance as yf
 import plotly.graph_objects as go 
 import logging
 
-def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick = True, ema_periods = [13, 26],):
+
+# def compute_ema(price_data)
+def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick = True, ema_periods = [13, 26], MACD = False):
     """
     Plots the price history of a given stock ticker using Yahoo Finance data, 
     with optional trade markers (market/limit buys and sells). Supports both 
@@ -52,9 +54,8 @@ def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick 
       if needed for other currencies.
     - Use `candlestick=False` for long-term views or cleaner visuals.
     """
-
-
     logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s', force=True)
+
 
     # Plot historical prices with candlestick or linegraph style. 
     if candlestick:
@@ -98,7 +99,6 @@ def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick 
             'Limit buy': dict(symbol='triangle-up', color='green'),
             'Limit sell': dict(symbol='triangle-down', color='red'),
         }
-
         for action, style in action_styles.items():
             subset = buy_sell_data[buy_sell_data['Action'] == action]
             if not subset.empty:
