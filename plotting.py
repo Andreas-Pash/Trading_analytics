@@ -4,7 +4,7 @@ import logging
 
 
 # def compute_ema(price_data)
-def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick = True, ema_periods = [13, 26], MACD = False):
+def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick = True, ema_periods = [13, 26]):
     """
     Plots the price history of a given stock ticker using Yahoo Finance data, 
     with optional trade markers (market/limit buys and sells). Supports both 
