@@ -1,10 +1,22 @@
 import yfinance as yf
+
 import plotly.graph_objects as go 
+from plotly.subplots import make_subplots
+
 import logging
 
 
 # def compute_ema(price_data)
-def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick = True, ema_periods = [13, 26]):
+def plot_stock_price(price_data,
+                ticker_name,
+                buy_sell_data = None,
+                candlestick = True,
+                ema_periods = [13, 26],
+                plot_macd = False,
+                fast_macd = None,
+                slow_signal = None,
+
+            ):
     """
     Plots the price history of a given stock ticker using Yahoo Finance data, 
     with optional trade markers (market/limit buys and sells). Supports both 
@@ -55,40 +67,53 @@ def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick 
     - Use `candlestick=False` for long-term views or cleaner visuals.
     """
     logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s', force=True)
+ 
+    if plot_macd:
+        if fast_macd is None or slow_signal is None:
+            raise ValueError("If plot_macd=True, both fast_macd and slow_signal must be provided.")       
+        fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+                    row_heights=[0.6, 0.25, 0.15],
+                    vertical_spacing=0.1,
+                    subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram'))
+    else:
+        fig = make_subplots(
+            rows=1, cols=1, shared_xaxes=True,
+            subplot_titles=(f'{ticker_name} Price',)
+        )
 
 
     # Plot historical prices with candlestick or linegraph style. 
     if candlestick:
-        fig = go.Figure(data=[go.Candlestick(
+        fig.add_trace(go.Candlestick(
             x=price_data.index,
             open=price_data['Open'],
             high=price_data['High'],
             low=price_data['Low'],
             close=price_data['Close'],
             name= f'{ticker_name} Price'
-        )])
-    else:
-        fig = go.Figure() 
+        ), row=1, col=1)
+    else:  
         fig.add_trace(go.Scatter(
             x=price_data.index,
             y=price_data['Close'],
             mode='lines',
             name=f'{ticker_name} Close Price',
             line=dict(color='blue')
-        )) 
+        ), row=1, col=1)
     
 
     # Plot specified EMA'S (if any)
     if ema_periods:
         for span in ema_periods:
             ema_vals = price_data['Close'].ewm(span= span, adjust=False).mean()
+            # Todo: Move the above calcualtion to the Techinical indicators module
             fig.add_trace(go.Scatter(
                 x=ema_vals.index,
                 y=ema_vals,
                 mode='lines',
                 name= f'EMA_{span}',
                 line=dict(dash='dash')
-            ))
+            ), row=1, col=1)
 
 
     # Plot trading history if available
@@ -114,14 +139,52 @@ def plot_stock_price(price_data, ticker_name, buy_sell_data = None, candlestick 
                         'Price: $%{y:.2f}<br>' +
                         'Value: £%{customdata[0]}<br>' +
                         'Result: £%{customdata[1]}<br>'
-                ))
+                ), row=1, col=1)
 
+    # Plot MACD if requested                 
+    if plot_macd:
+        # Fast MACD line
+        fig.add_trace(go.Scatter(
+            x=fast_macd.index,
+            y=fast_macd,
+            mode='lines',
+            name='Fast MACD Line',
+            line=dict(dash='dash', color='blue', width=2)
+        ), row=2, col=1)
+
+        # Slow MACD Signal Line
+        fig.add_trace(go.Scatter(
+            x=slow_signal.index,
+            y=slow_signal,
+            mode='lines',
+            name='Slow Signal Line',
+            line=dict(dash='dot', color='red', width=2)
+        ), row=2, col=1)
+
+        # MACD Histogram
+        macd_hist = fast_macd - slow_signal
+        fig.add_trace(go.Bar(
+            x=macd_hist.index,
+            y=macd_hist,
+            name='MACD Histogram',
+            marker_color='black'
+        ), row=3, col=1) 
+        fig.update_layout(xaxis3_title='Date')
+    else:
+        # Set x-axis title for single-row layout
+        fig.update_layout(xaxis_title='Date')
+
+  
     fig.update_layout(
-        title= f'{ticker_name} Chart',
-        xaxis_title='Date',
-        yaxis_title='Price (USD)',
-        xaxis_rangeslider_visible=False
+    title='MACD and Signal Line',
+    height=900,
+    width=1200,
+    xaxis3=dict(
+        tickformat="%Y-%m-%d",
+        tickangle=45,
+        showgrid=True
+        )
     )
-    fig.show()
 
+    fig.show()
     return
