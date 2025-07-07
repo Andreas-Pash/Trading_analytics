@@ -73,8 +73,9 @@ def plot_stock_price(price_data,
             raise ValueError("If plot_macd=True, both fast_macd and slow_signal must be provided.")       
         fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                     row_heights=[0.6, 0.25, 0.15],
-                    vertical_spacing=0.1,
-                    subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram'))
+                    vertical_spacing= 0.1,
+                    subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram')
+                )
     else:
         fig = make_subplots(
             rows=1, cols=1, shared_xaxes=True,
@@ -107,6 +108,7 @@ def plot_stock_price(price_data,
         for span in ema_periods:
             ema_vals = price_data['Close'].ewm(span= span, adjust=False).mean()
             # Todo: Move the above calcualtion to the Techinical indicators module
+            
             fig.add_trace(go.Scatter(
                 x=ema_vals.index,
                 y=ema_vals,
@@ -168,23 +170,30 @@ def plot_stock_price(price_data,
             y=macd_hist,
             name='MACD Histogram',
             marker_color='black'
-        ), row=3, col=1) 
-        fig.update_layout(xaxis3_title='Date')
-    else:
-        # Set x-axis title for single-row layout
-        fig.update_layout(xaxis_title='Date')
+        ), row=3, col=1)  
 
-  
     fig.update_layout(
-    title='MACD and Signal Line',
-    height=900,
-    width=1200,
-    xaxis3=dict(
-        tickformat="%Y-%m-%d",
-        tickangle=45,
-        showgrid=True
+        title= f"{ticker_name} Price {'with MACD' if plot_macd else ''}",
+        height=900,
+        width=1200,
+        xaxis_rangeslider_visible=False,
+        xaxis=dict(        # row=1
+            tickformat="%Y-%m-%d",
+            tickangle=45,
+            showgrid=True
+        ),
+        xaxis2=dict(       # row=2
+            showticklabels=False,
+            showgrid=True
+        ),
+        xaxis3=dict(       # row=3
+            title='Date',
+            tickformat="%Y-%m-%d",
+            tickangle=45,
+            showgrid=True
         )
     )
 
+    
     fig.show()
     return
