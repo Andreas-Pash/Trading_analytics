@@ -15,6 +15,7 @@ def plot_stock_price(price_data,
                 plot_macd = False,
                 fast_macd = None,
                 slow_signal = None,
+                plot_volume = False
 
             ):
     """
@@ -71,16 +72,35 @@ def plot_stock_price(price_data,
     if plot_macd:
         if fast_macd is None or slow_signal is None:
             raise ValueError("If plot_macd=True, both fast_macd and slow_signal must be provided.")       
-        fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+        
+        if plot_volume:
+            volume_row = 4
+            fig = make_subplots(rows=4, cols=1, shared_xaxes=True,
+                row_heights=[0.56, 0.14, 0.14, 0.14 ],
+                vertical_spacing= 0.1,
+                subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram', 'Volume')
+            )
+            volume_row = 4   
+        else:
+            fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                     row_heights=[0.6, 0.25, 0.15],
                     vertical_spacing= 0.1,
                     subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram')
                 )
+        
     else:
-        fig = make_subplots(
-            rows=1, cols=1, shared_xaxes=True,
-            subplot_titles=(f'{ticker_name} Price',)
-        )
+        if plot_volume:
+            fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                    row_heights=[0.65, 0.35],
+                    vertical_spacing= 0.1,
+                    subplot_titles=(f'{ticker_name} Price', 'Volume')
+                )
+            volume_row = 2
+        else:
+            fig = make_subplots(
+                rows=1, cols=1, shared_xaxes=True,
+                subplot_titles=(f'{ticker_name} Price',)
+            )
 
 
     # Plot historical prices with candlestick or linegraph style. 
@@ -143,6 +163,7 @@ def plot_stock_price(price_data,
                         'Result: £%{customdata[1]}<br>'
                 ), row=1, col=1)
 
+
     # Plot MACD if requested                 
     if plot_macd:
         # Fast MACD line
@@ -172,6 +193,22 @@ def plot_stock_price(price_data,
             marker_color='black'
         ), row=3, col=1)  
 
+
+    # Plot Volume if requested  
+    if plot_volume:
+        fig.add_trace(
+            go.Bar(
+                x=price_data.index,
+                y=price_data['Volume'],
+                name='Volume',
+                marker_color='red',
+                opacity=0.5
+            ),
+            row= volume_row,
+            col=1
+        )
+
+
     fig.update_layout(
         title= f"{ticker_name} Price {'with MACD' if plot_macd else ''}",
         height=900,
@@ -194,6 +231,5 @@ def plot_stock_price(price_data,
         )
     )
 
-    
     fig.show()
     return
