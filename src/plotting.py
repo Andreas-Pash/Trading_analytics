@@ -6,7 +6,6 @@ from plotly.subplots import make_subplots
 import logging
 
 
-# def compute_ema(price_data)
 def plot_stock_price(price_data,
                 ticker_name,
                 buy_sell_data = None,
@@ -15,8 +14,12 @@ def plot_stock_price(price_data,
                 plot_macd = False,
                 fast_macd = None,
                 slow_signal = None,
+                plot_rsi = False,
+                rsi_data = None,
+                oversold_thr = 30,
+                overbought_thr = 70,
+                rsi_period = 13,
                 plot_volume = False
-
             ):
     """
     Plots the price history of a given stock ticker using Yahoo Finance data, 
@@ -68,8 +71,11 @@ def plot_stock_price(price_data,
     - Use `candlestick=False` for long-term views or cleaner visuals.
     """
     logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s', force=True)
- 
+
     if plot_macd:
+        if plot_rsi:
+            raise ValueError("Can't plot both MACD and RSI on this function")       
+        
         if fast_macd is None or slow_signal is None:
             raise ValueError("If plot_macd=True, both fast_macd and slow_signal must be provided.")       
         
@@ -87,7 +93,27 @@ def plot_stock_price(price_data,
                     vertical_spacing= 0.1,
                     subplot_titles=(f'{ticker_name} Price', 'MACD', 'MACD Histogram')
                 )
+    
+    elif plot_rsi:
+        if plot_macd:
+            raise ValueError("Can't plot both MACD and RSI on this function")       
         
+        if rsi_data is None:
+            raise ValueError("If plot_rsi=True, RSI data must be provided")       
+        
+        if plot_volume:
+            volume_row = 3
+            fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+                row_heights=[0.6, 0.25, 0.15],
+                vertical_spacing= 0.1,
+                subplot_titles=(f'{ticker_name} Price', 'RSI', 'Volume')
+            ) 
+        else:
+            fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                    row_heights=[0.65, 0.35],
+                    vertical_spacing= 0.1,
+                    subplot_titles=(f'{ticker_name} Price', 'RSI')
+                )
     else:
         if plot_volume:
             fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
@@ -164,7 +190,7 @@ def plot_stock_price(price_data,
                 ), row=1, col=1)
 
 
-    # Plot MACD if requested                 
+    # Plot MACD        
     if plot_macd:
         # Fast MACD line
         fig.add_trace(go.Scatter(
@@ -191,10 +217,37 @@ def plot_stock_price(price_data,
             y=macd_hist,
             name='MACD Histogram',
             marker_color='black'
-        ), row=3, col=1)  
+        ), row=3, col=1)
 
 
-    # Plot Volume if requested  
+    # Plot RSI  
+    if plot_rsi:
+        fig.add_trace(go.Scatter(
+            x=price_data.index,
+            y=rsi_data,
+            mode='lines',
+            marker_color='black',
+            name='RSI'
+        ), row=2, col=1)
+        
+        # Add overbought and oversold lines
+        fig.add_trace(go.Scatter(
+            x=price_data.index,
+            y=[overbought_thr]*len(price_data),
+            mode='lines',
+            name=f'Overbought ({overbought_thr})',
+            line=dict(dash='dash', color='red')
+        ), row=2, col=1)
+        fig.add_trace(go.Scatter(
+            x=price_data.index,
+            y=[oversold_thr]*len(price_data),
+            mode='lines',
+            name=f'Oversold ({oversold_thr})',
+            line=dict(dash='dash', color='green')
+        ), row=2, col=1)
+ 
+
+    # Plot Volume
     if plot_volume:
         fig.add_trace(
             go.Bar(
@@ -232,4 +285,6 @@ def plot_stock_price(price_data,
     )
 
     fig.show()
+
+    
     return
